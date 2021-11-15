@@ -34,13 +34,13 @@ class MarketDataExtractor(BaseFeaturesExtractor):
         self.lin2 = nn.Linear(2 * hidden_dim, out_features_dim)
 
     def forward(self, observations: dict[str, torch.Tensor]) -> torch.Tensor:
-        # shape: (2, max_trades, n_traded_syms)
+        # shape: (2, batch_size, max_trades, n_traded_syms)
         trades_data = torch.stack(
             (observations["trades_rel_sizes"], observations["trades_log_pl"])
         )
 
-        # shape: n_traded_syms, max_trades, 2
-        trades_data = trades_data.permute(*reversed(range(trades_data.ndim)))
+        # shape: batch_size, n_traded_syms, max_trades, 2
+        trades_data = trades_data.permute(1, 3, 2, 0).flatten(2, -1)
 
         out1: torch.Tensor = self.conv1(observations["market_data"]).relu()
         out1 = self.conv2(out1).squeeze(2)
